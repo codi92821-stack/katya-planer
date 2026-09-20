@@ -1,0 +1,869 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Планер Кати 🎭</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --bordeaux: #8b1e3f;
+    --bordeaux-dark: #6d1731;
+    --gold: #c9a227;
+    --ink: #2b2430;
+    --muted: #7a7185;
+    --paper: #faf6f1;
+    --card: #ffffff;
+    --line: #e8e0d8;
+    --danger: #c0392b;
+    --warn: #d68910;
+    --ok: #3d7a4f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.45;
+  }
+  header {
+    text-align: center;
+    padding: 28px 16px 10px;
+  }
+  h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 2rem;
+    margin: 0;
+    color: var(--bordeaux);
+    outline: none;
+    border-bottom: 2px dashed transparent;
+    display: inline-block;
+    padding: 0 8px;
+  }
+  h1:focus { border-bottom-color: var(--gold); }
+  .subtitle { margin: 4px 0 0; color: var(--muted); font-size: .95rem; }
+
+  .week-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    max-width: 1280px;
+    margin: 14px auto 10px;
+    padding: 0 16px;
+  }
+  .week-nav .spacer { flex: 1; }
+  #weekLabel { font-weight: 600; font-size: 1.05rem; min-width: 210px; text-align: center; }
+  #weekHint { font-size: .8rem; color: var(--muted); display: block; font-weight: 400; }
+  button {
+    font: inherit;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--ink);
+    border-radius: 10px;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: box-shadow .15s, transform .05s;
+  }
+  button:hover { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+  button:active { transform: translateY(1px); }
+  button.primary { background: var(--bordeaux); border-color: var(--bordeaux); color: #fff; }
+  button.primary:hover { background: var(--bordeaux-dark); }
+  button.ghost { background: transparent; }
+  button.danger { color: var(--danger); border-color: #eacfcb; }
+
+  .week {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 16px;
+  }
+  .day {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 10px;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+  }
+  .day.today { border: 2px solid var(--gold); box-shadow: 0 4px 14px rgba(201,162,39,.18); }
+  .day-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .day-name { font-weight: 700; }
+  .day.today .day-name::after { content: " · сегодня"; color: var(--gold); font-size: .75rem; }
+  .day-date { color: var(--muted); font-size: .85rem; }
+  .badges { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+  .badge {
+    font-size: .72rem;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: #f1ece6;
+    color: var(--muted);
+  }
+  .badge.warn { background: #fdf0dc; color: var(--warn); font-weight: 600; }
+  .badge.danger { background: #fbe4e0; color: var(--danger); font-weight: 600; }
+  .badge.sleep { background: #e8ecfb; color: #4a5aa8; font-weight: 600; }
+
+  .event {
+    border-left: 4px solid var(--muted);
+    background: #fbf9f7;
+    border-radius: 8px;
+    padding: 6px 8px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    font-size: .85rem;
+  }
+  .event:hover { background: #f4efe9; }
+  .event .time { color: var(--muted); font-size: .75rem; }
+  .event .name { font-weight: 600; }
+  .event .note { color: var(--muted); font-size: .78rem; }
+  .dl-chip {
+    border-radius: 8px;
+    background: #fdf0dc;
+    padding: 5px 8px;
+    margin-bottom: 6px;
+    font-size: .8rem;
+    color: #8a5a00;
+  }
+  .dl-chip.done { text-decoration: line-through; opacity: .55; }
+  .add-btn {
+    margin-top: auto;
+    align-self: stretch;
+    border-style: dashed;
+    color: var(--muted);
+    padding: 5px;
+    font-size: .85rem;
+  }
+  .empty-note { color: #c8c0b8; font-size: .8rem; text-align: center; padding: 8px 0; }
+
+  .bottom {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 14px;
+    max-width: 1280px;
+    margin: 18px auto;
+    padding: 0 16px;
+  }
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .panel h2 {
+    font-family: Georgia, serif;
+    font-size: 1.15rem;
+    margin: 0 0 12px;
+    color: var(--bordeaux);
+  }
+  .frow { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .frow label { display: flex; flex-direction: column; gap: 4px; font-size: .8rem; color: var(--muted); flex: 1; min-width: 120px; }
+  input, select {
+    font: inherit;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--ink);
+    width: 100%;
+  }
+  input:focus, select:focus { outline: 2px solid rgba(139,30,63,.25); }
+  .form-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  #formMsg { color: var(--danger); font-size: .85rem; min-height: 1.2em; margin: 6px 0 0; }
+
+  #dlList { list-style: none; margin: 0 0 12px; padding: 0; }
+  #dlList li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 4px;
+    border-bottom: 1px dashed var(--line);
+    font-size: .92rem;
+  }
+  #dlList li.done .dl-title { text-decoration: line-through; opacity: .5; }
+  .dl-title { flex: 1; }
+  .dl-date { color: var(--muted); font-size: .8rem; white-space: nowrap; }
+  .dl-left { font-size: .78rem; font-weight: 700; white-space: nowrap; padding: 2px 8px; border-radius: 20px; background: #f1ece6; color: var(--muted); }
+  .dl-left.soon { background: #fdf0dc; color: var(--warn); }
+  .dl-left.now { background: #fbe4e0; color: var(--danger); }
+  .dl-del { border: none; background: none; color: #c8b8ad; cursor: pointer; font-size: 1rem; padding: 2px 6px; }
+  .dl-del:hover { color: var(--danger); box-shadow: none; }
+  #dlList input[type=checkbox] { width: auto; accent-color: var(--ok); }
+  .dl-empty { color: var(--muted); font-size: .9rem; padding: 4px; }
+
+  footer {
+    max-width: 1280px;
+    margin: 10px auto 40px;
+    padding: 0 16px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  footer .hint { width: 100%; margin-top: 12px; color: var(--muted); font-size: .88rem; }
+  footer summary { cursor: pointer; color: var(--bordeaux); font-weight: 600; }
+  footer ul { margin: 8px 0 0; padding-left: 20px; }
+  #importFile { display: none; }
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--ink);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: .9rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s;
+    z-index: 50;
+  }
+  #toast.show { opacity: 1; }
+
+  /* режим Telegram Mini App */
+  body.in-tg { padding-bottom: env(safe-area-inset-bottom, 0); }
+  body.in-tg header { padding: 16px 12px 6px; }
+  body.in-tg .subtitle { display: none; }
+  body.in-tg #printBtn,
+  body.in-tg #exportBtn,
+  body.in-tg footer label[for=importFile] { display: none; }
+
+  @media (max-width: 920px) {
+    .week { grid-template-columns: 1fr; }
+    .day { min-height: 0; }
+    .bottom { grid-template-columns: 1fr; }
+    .empty-note { display: none; }
+  }
+
+  @media print {
+    body { background: #fff; }
+    .week-nav, .bottom .form-panel, .dl-form, footer, .add-btn, .dl-del, #toast { display: none !important; }
+    .week { grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 0; font-size: 9px; }
+    .day { border-radius: 4px; padding: 4px; min-height: 0; break-inside: avoid; }
+    .event { font-size: 8.5px; padding: 3px 4px; margin-bottom: 3px; }
+    .bottom { grid-template-columns: 1fr; margin: 8px 0; padding: 0; }
+    header { padding: 4px; }
+    h1 { font-size: 1.3rem; }
+    .subtitle { display: none; }
+    body::before {
+      content: "Неделя: " attr(data-week-label);
+      display: block;
+      text-align: center;
+      font-size: .95rem;
+      margin-bottom: 8px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="title" contenteditable="true" spellcheck="false">Планер Кати</h1>
+  <p class="subtitle">театральная неделя под контролем 🎭 · нажми на имя, чтобы поменять</p>
+</header>
+
+<section class="week-nav">
+  <button id="prevWeek" title="Предыдущая неделя">←</button>
+  <div id="weekLabel"></div>
+  <button id="nextWeek" title="Следующая неделя">→</button>
+  <button id="todayBtn" class="ghost">Сегодня</button>
+  <div class="spacer"></div>
+  <button id="copyBtn">📋 Неделя текстом</button>
+  <button id="printBtn">🖨 Распечатать</button>
+</section>
+
+<section id="week" class="week"></section>
+
+<section class="bottom">
+  <div class="panel form-panel">
+    <h2 id="formTitle">Добавить в расписание</h2>
+    <div class="frow">
+      <label style="flex:2">Что
+        <input id="fName" type="text" placeholder="Репетиция «Чайки», сценречь, прогон…">
+      </label>
+      <label>Тип
+        <select id="fType"></select>
+      </label>
+    </div>
+    <div class="frow">
+      <label>Повтор
+        <select id="fRepeat">
+          <option value="once">Разово (дата)</option>
+          <option value="weekly">Каждую неделю</option>
+        </select>
+      </label>
+      <label id="fDateWrap">Дата
+        <input id="fDate" type="date">
+      </label>
+      <label id="fWeekdayWrap" style="display:none">День недели
+        <select id="fWeekday"></select>
+      </label>
+      <label>С
+        <input id="fStart" type="time">
+      </label>
+      <label>До
+        <input id="fEnd" type="time">
+      </label>
+    </div>
+    <div class="frow">
+      <label>Заметка (необязательно)
+        <input id="fNote" type="text" placeholder="взять костюм, повторить 2-й акт…">
+      </label>
+    </div>
+    <div class="form-actions">
+      <button id="saveBtn" class="primary">Добавить</button>
+      <button id="cancelBtn" class="ghost" style="display:none">Отмена</button>
+      <button id="deleteBtn" class="danger" style="display:none">Удалить</button>
+    </div>
+    <p id="formMsg"></p>
+  </div>
+
+  <div class="panel deadlines-panel">
+    <h2>⏰ Дедлайны</h2>
+    <ul id="dlList"></ul>
+    <div class="frow dl-form">
+      <label style="flex:2">Что сдать / выучить
+        <input id="dlName" type="text" placeholder="выучить монолог, эссе по истории театра…">
+      </label>
+      <label>К какому дню
+        <input id="dlDate" type="date">
+      </label>
+    </div>
+    <div class="form-actions dl-form">
+      <button id="dlAddBtn" class="primary">Добавить дедлайн</button>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <button id="exportBtn">💾 Сохранить копию в файл</button>
+  <label for="importFile"><button onclick="document.getElementById('importFile').click()">📂 Загрузить копию</button></label>
+  <input id="importFile" type="file" accept=".json,application/json">
+  <details class="hint">
+    <summary>Как это работает</summary>
+    <ul>
+      <li id="hintStorage">Всё сохраняется автоматически прямо в этом браузере — ничего никуда не отправляется.</li>
+      <li>Регулярные репетиции добавляй с повтором «каждую неделю» — они появятся во всех неделях сразу.</li>
+      <li>Планер сам предупредит, если день перегружен или между поздним вечером и ранним утром остаётся мало сна.</li>
+      <li>«Неделя текстом» — скопирует расписание, чтобы отправить в мессенджер.</li>
+      <li>Чтобы перенести планер на другой компьютер или телефон: «Сохранить копию в файл» здесь → «Загрузить копию» там.</li>
+      <li>Нажми на любую запись, чтобы изменить или удалить её.</li>
+    </ul>
+  </details>
+</footer>
+
+<div id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var LS_KEY = 'katya-planner-v1';
+
+  // --- Telegram Mini App: определяем, открыты ли мы внутри Telegram ---
+  var tg = (typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.initData)
+    ? Telegram.WebApp : null;
+  var cloud = (tg && tg.isVersionAtLeast && tg.isVersionAtLeast('6.9')) ? tg.CloudStorage : null;
+  if (tg) {
+    try {
+      tg.ready();
+      tg.expand();
+      if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
+      document.body.classList.add('in-tg');
+      var hs = document.getElementById('hintStorage');
+      if (hs) hs.textContent = 'Всё сохраняется в облаке Telegram и синхронизируется между твоими устройствами.';
+    } catch (e) {}
+  }
+
+  var TYPES = {
+    reh:   { label: 'Репетиция',        emoji: '🎭', color: '#8b1e3f' },
+    show:  { label: 'Спектакль / показ', emoji: '✨', color: '#b8860b' },
+    klass: { label: 'Занятия / учёба',   emoji: '📚', color: '#2f5d8a' },
+    text:  { label: 'Учить текст',       emoji: '📜', color: '#6a4fa3' },
+    rest:  { label: 'Отдых / личное',    emoji: '🌿', color: '#3d7a4f' },
+    other: { label: 'Другое',            emoji: '📌', color: '#7a7185' }
+  };
+  var DAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+  var DAYS_FULL = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
+  var MONTHS_GEN = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+                    'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+
+  var state = load();
+  var weekOffset = 0;
+  var editingId = null;
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(LS_KEY);
+      if (raw) {
+        var s = JSON.parse(raw);
+        if (s && Array.isArray(s.events) && Array.isArray(s.deadlines)) return s;
+      }
+    } catch (e) {}
+    return { title: 'Планер Кати', events: [], deadlines: [] };
+  }
+  // Облако Telegram ограничивает размер одной записи, поэтому режем данные на куски
+  var CLOUD_CHUNK = 3800;
+  var cloudTimer = null;
+  function cloudSave() {
+    if (!cloud) return;
+    var json = JSON.stringify(state);
+    var chunks = [];
+    for (var i = 0; i < json.length; i += CLOUD_CHUNK) chunks.push(json.slice(i, i + CLOUD_CHUNK));
+    try {
+      cloud.setItem('pl_n', String(chunks.length), function () {
+        chunks.forEach(function (c, idx) {
+          cloud.setItem('pl_' + idx, c, function () {});
+        });
+      });
+    } catch (e) {}
+  }
+  function cloudLoad(cb) {
+    if (!cloud) { cb(null); return; }
+    try {
+      cloud.getItem('pl_n', function (err, n) {
+        n = parseInt(n, 10);
+        if (err || !n || n < 1) { cb(null); return; }
+        var keys = [];
+        for (var i = 0; i < n; i++) keys.push('pl_' + i);
+        cloud.getItems(keys, function (err2, map) {
+          if (err2 || !map) { cb(null); return; }
+          var json = keys.map(function (k) { return map[k] || ''; }).join('');
+          try {
+            var s = JSON.parse(json);
+            if (s && Array.isArray(s.events) && Array.isArray(s.deadlines)) { cb(s); return; }
+          } catch (e3) {}
+          cb(null);
+        });
+      });
+    } catch (e) { cb(null); }
+  }
+
+  function save() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
+    if (cloud) {
+      clearTimeout(cloudTimer);
+      cloudTimer = setTimeout(cloudSave, 600);
+    }
+  }
+  function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function toMin(t) {
+    if (!t) return null;
+    var p = t.split(':');
+    return (+p[0]) * 60 + (+p[1]);
+  }
+  function isoOf(d) {
+    var m = d.getMonth() + 1, day = d.getDate();
+    return d.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day;
+  }
+  function startOfWeek(offset) {
+    var now = new Date();
+    var d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var dow = (d.getDay() + 6) % 7; // 0 = понедельник
+    d.setDate(d.getDate() - dow + offset * 7);
+    return d;
+  }
+  function weekDates(offset) {
+    var start = startOfWeek(offset), out = [];
+    for (var i = 0; i < 7; i++) {
+      var d = new Date(start);
+      d.setDate(start.getDate() + i);
+      out.push(d);
+    }
+    return out;
+  }
+  function eventsOfDay(date, weekdayIdx) {
+    var iso = isoOf(date);
+    return state.events
+      .filter(function (e) {
+        return (e.kind === 'once' && e.date === iso) ||
+               (e.kind === 'weekly' && e.weekday === weekdayIdx);
+      })
+      .sort(function (a, b) { return (toMin(a.start) || 0) - (toMin(b.start) || 0); });
+  }
+  function durationMin(e) {
+    var s = toMin(e.start), en = toMin(e.end);
+    if (s == null || en == null) return 0;
+    if (en < s) en += 1440; // через полночь
+    return en - s;
+  }
+  function fmtHours(min) {
+    var h = Math.round(min / 30) / 2;
+    return (h % 1 === 0 ? h : h.toFixed(1)) + ' ч';
+  }
+  function weekLabelText(dates) {
+    var a = dates[0], b = dates[6];
+    if (a.getMonth() === b.getMonth()) {
+      return a.getDate() + ' – ' + b.getDate() + ' ' + MONTHS_GEN[a.getMonth()] + ' ' + a.getFullYear();
+    }
+    return a.getDate() + ' ' + MONTHS_GEN[a.getMonth()] + ' – ' + b.getDate() + ' ' + MONTHS_GEN[b.getMonth()] + ' ' + b.getFullYear();
+  }
+
+  // --- отрисовка недели ---
+  function render() {
+    var dates = weekDates(weekOffset);
+    var todayIso = isoOf(new Date());
+
+    var label = weekLabelText(dates);
+    var hint = weekOffset === 0 ? 'текущая неделя'
+             : weekOffset === 1 ? 'следующая неделя'
+             : weekOffset === -1 ? 'прошлая неделя'
+             : (weekOffset > 0 ? '+' + weekOffset : weekOffset) + ' нед.';
+    document.getElementById('weekLabel').innerHTML = esc(label) + '<span id="weekHint">' + esc(hint) + '</span>';
+    document.body.setAttribute('data-week-label', label);
+
+    // окна сна: конец последнего события дня N -> начало первого события дня N+1
+    var sleepWarn = [null, null, null, null, null, null, null];
+    for (var i = 1; i < 7; i++) {
+      var prev = eventsOfDay(dates[i - 1], i - 1).filter(function (e) { return e.start && e.end; });
+      var cur = eventsOfDay(dates[i], i).filter(function (e) { return e.start && e.end; });
+      if (!prev.length || !cur.length) continue;
+      var lastEnd = 0;
+      prev.forEach(function (e) {
+        var s = toMin(e.start), en = toMin(e.end);
+        if (en < s) en += 1440;
+        if (en > lastEnd) lastEnd = en;
+      });
+      var firstStart = Math.min.apply(null, cur.map(function (e) { return toMin(e.start); }));
+      var gap = (1440 - lastEnd) + firstStart; // может быть отрицательным при переходе через полночь
+      if (gap < 8 * 60) {
+        sleepWarn[i] = Math.max(0, Math.round(gap / 30) / 2);
+      }
+    }
+
+    var html = '';
+    for (var d = 0; d < 7; d++) {
+      var date = dates[d];
+      var iso = isoOf(date);
+      var evs = eventsOfDay(date, d);
+      var dls = state.deadlines.filter(function (x) { return x.date === iso; });
+
+      var loadMin = evs.reduce(function (sum, e) {
+        return sum + (e.type === 'rest' ? 0 : durationMin(e));
+      }, 0);
+
+      var badges = '';
+      if (loadMin > 0) {
+        var cls = loadMin > 11 * 60 ? 'danger' : loadMin > 8 * 60 ? 'warn' : '';
+        var word = loadMin > 11 * 60 ? ' · перегруз!' : loadMin > 8 * 60 ? ' · плотно' : '';
+        badges += '<span class="badge ' + cls + '">' + fmtHours(loadMin) + word + '</span>';
+      }
+      if (sleepWarn[d] != null) {
+        badges += '<span class="badge sleep">😴 сна ~' + sleepWarn[d] + ' ч</span>';
+      }
+
+      var body = '';
+      dls.forEach(function (x) {
+        body += '<div class="dl-chip' + (x.done ? ' done' : '') + '">⏰ ' + esc(x.title) + '</div>';
+      });
+      evs.forEach(function (e) {
+        var t = TYPES[e.type] || TYPES.other;
+        body += '<div class="event" data-id="' + e.id + '" style="border-left-color:' + t.color + '">' +
+          '<div class="time">' + esc(e.start || '') + (e.end ? '–' + esc(e.end) : '') +
+            (e.kind === 'weekly' ? ' · еженед.' : '') + '</div>' +
+          '<div class="name">' + t.emoji + ' ' + esc(e.title) + '</div>' +
+          (e.note ? '<div class="note">' + esc(e.note) + '</div>' : '') +
+        '</div>';
+      });
+      if (!evs.length && !dls.length) body += '<div class="empty-note">свободно 🕊</div>';
+
+      html += '<div class="day' + (iso === todayIso ? ' today' : '') + '">' +
+        '<div class="day-head"><span class="day-name">' + DAYS_SHORT[d] + '</span>' +
+        '<span class="day-date">' + date.getDate() + ' ' + MONTHS_GEN[date.getMonth()].slice(0, 3) + '</span></div>' +
+        (badges ? '<div class="badges">' + badges + '</div>' : '') +
+        body +
+        '<button class="add-btn" data-day="' + d + '" data-iso="' + iso + '">+ добавить</button>' +
+      '</div>';
+    }
+    document.getElementById('week').innerHTML = html;
+    renderDeadlines();
+  }
+
+  // --- дедлайны ---
+  function renderDeadlines() {
+    var list = document.getElementById('dlList');
+    var today = new Date();
+    var t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    var items = state.deadlines.slice().sort(function (a, b) {
+      if (a.done !== b.done) return a.done ? 1 : -1;
+      return a.date < b.date ? -1 : 1;
+    });
+    if (!items.length) {
+      list.innerHTML = '<li class="dl-empty">Пока пусто. Добавь первый дедлайн ниже 👇</li>';
+      return;
+    }
+    list.innerHTML = items.map(function (x) {
+      var p = x.date.split('-');
+      var dt = new Date(+p[0], +p[1] - 1, +p[2]);
+      var left = Math.round((dt.getTime() - t0) / 86400000);
+      var leftTxt, leftCls;
+      if (x.done) { leftTxt = 'готово ✓'; leftCls = ''; }
+      else if (left < 0) { leftTxt = 'просрочен'; leftCls = 'now'; }
+      else if (left === 0) { leftTxt = 'сегодня!'; leftCls = 'now'; }
+      else if (left === 1) { leftTxt = 'завтра'; leftCls = 'soon'; }
+      else if (left <= 3) { leftTxt = 'через ' + left + ' дн.'; leftCls = 'soon'; }
+      else { leftTxt = 'через ' + left + ' дн.'; leftCls = ''; }
+      return '<li class="' + (x.done ? 'done' : '') + '">' +
+        '<input type="checkbox" data-dl="' + x.id + '"' + (x.done ? ' checked' : '') + '>' +
+        '<span class="dl-title">' + esc(x.title) + '</span>' +
+        '<span class="dl-date">' + dt.getDate() + ' ' + MONTHS_GEN[dt.getMonth()].slice(0, 3) + '</span>' +
+        '<span class="dl-left ' + leftCls + '">' + leftTxt + '</span>' +
+        '<button class="dl-del" data-dldel="' + x.id + '" title="Удалить">✕</button>' +
+      '</li>';
+    }).join('');
+  }
+
+  // --- форма ---
+  function fillTypeSelects() {
+    var sel = document.getElementById('fType');
+    sel.innerHTML = Object.keys(TYPES).map(function (k) {
+      return '<option value="' + k + '">' + TYPES[k].emoji + ' ' + TYPES[k].label + '</option>';
+    }).join('');
+    var wd = document.getElementById('fWeekday');
+    wd.innerHTML = DAYS_FULL.map(function (n, i) {
+      return '<option value="' + i + '">' + n + '</option>';
+    }).join('');
+  }
+  function syncRepeatUI() {
+    var weekly = document.getElementById('fRepeat').value === 'weekly';
+    document.getElementById('fDateWrap').style.display = weekly ? 'none' : '';
+    document.getElementById('fWeekdayWrap').style.display = weekly ? '' : 'none';
+  }
+  function resetForm() {
+    editingId = null;
+    document.getElementById('formTitle').textContent = 'Добавить в расписание';
+    document.getElementById('saveBtn').textContent = 'Добавить';
+    document.getElementById('cancelBtn').style.display = 'none';
+    document.getElementById('deleteBtn').style.display = 'none';
+    document.getElementById('fName').value = '';
+    document.getElementById('fNote').value = '';
+    document.getElementById('fStart').value = '';
+    document.getElementById('fEnd').value = '';
+    document.getElementById('fRepeat').value = 'once';
+    document.getElementById('fDate').value = isoOf(new Date());
+    document.getElementById('formMsg').textContent = '';
+    syncRepeatUI();
+  }
+  function startEdit(id) {
+    var e = state.events.find(function (x) { return x.id === id; });
+    if (!e) return;
+    editingId = id;
+    document.getElementById('formTitle').textContent = 'Изменить запись';
+    document.getElementById('saveBtn').textContent = 'Сохранить';
+    document.getElementById('cancelBtn').style.display = '';
+    document.getElementById('deleteBtn').style.display = '';
+    document.getElementById('fName').value = e.title;
+    document.getElementById('fType').value = e.type;
+    document.getElementById('fRepeat').value = e.kind;
+    if (e.kind === 'once') document.getElementById('fDate').value = e.date;
+    else document.getElementById('fWeekday').value = e.weekday;
+    document.getElementById('fStart').value = e.start || '';
+    document.getElementById('fEnd').value = e.end || '';
+    document.getElementById('fNote').value = e.note || '';
+    document.getElementById('formMsg').textContent = '';
+    syncRepeatUI();
+    document.querySelector('.form-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  function saveForm() {
+    var title = document.getElementById('fName').value.trim();
+    var kind = document.getElementById('fRepeat').value;
+    var date = document.getElementById('fDate').value;
+    var start = document.getElementById('fStart').value;
+    var end = document.getElementById('fEnd').value;
+    var msg = document.getElementById('formMsg');
+    if (!title) { msg.textContent = 'Напиши, что за занятие 🙂'; return; }
+    if (kind === 'once' && !date) { msg.textContent = 'Выбери дату.'; return; }
+    if (!start || !end) { msg.textContent = 'Укажи время начала и конца.'; return; }
+    var e = {
+      id: editingId || uid(),
+      title: title,
+      type: document.getElementById('fType').value,
+      kind: kind,
+      date: kind === 'once' ? date : null,
+      weekday: kind === 'weekly' ? +document.getElementById('fWeekday').value : null,
+      start: start,
+      end: end,
+      note: document.getElementById('fNote').value.trim()
+    };
+    if (editingId) {
+      state.events = state.events.map(function (x) { return x.id === editingId ? e : x; });
+      toast('Запись обновлена');
+    } else {
+      state.events.push(e);
+      toast('Добавлено: ' + title);
+    }
+    save();
+    resetForm();
+    render();
+  }
+
+  // --- неделя текстом ---
+  function weekAsText() {
+    var dates = weekDates(weekOffset);
+    var lines = ['🎭 ' + state.title + ' — ' + weekLabelText(dates)];
+    for (var d = 0; d < 7; d++) {
+      var evs = eventsOfDay(dates[d], d);
+      var dls = state.deadlines.filter(function (x) { return x.date === isoOf(dates[d]) && !x.done; });
+      if (!evs.length && !dls.length) continue;
+      lines.push('');
+      lines.push(DAYS_SHORT[d] + ' ' + dates[d].getDate() + ' ' + MONTHS_GEN[dates[d].getMonth()].slice(0, 3));
+      evs.forEach(function (e) {
+        var t = TYPES[e.type] || TYPES.other;
+        lines.push('  ' + e.start + '–' + e.end + ' ' + t.emoji + ' ' + e.title + (e.note ? ' (' + e.note + ')' : ''));
+      });
+      dls.forEach(function (x) { lines.push('  ⏰ дедлайн: ' + x.title); });
+    }
+    if (lines.length === 1) lines.push('', 'Неделя пока свободна 🕊');
+    return lines.join('\n');
+  }
+
+  function toast(text) {
+    var el = document.getElementById('toast');
+    el.textContent = text;
+    el.classList.add('show');
+    clearTimeout(el._t);
+    el._t = setTimeout(function () { el.classList.remove('show'); }, 2200);
+  }
+
+  // --- обработчики ---
+  document.getElementById('prevWeek').onclick = function () { weekOffset--; render(); };
+  document.getElementById('nextWeek').onclick = function () { weekOffset++; render(); };
+  document.getElementById('todayBtn').onclick = function () { weekOffset = 0; render(); };
+  document.getElementById('printBtn').onclick = function () { window.print(); };
+  document.getElementById('saveBtn').onclick = saveForm;
+  document.getElementById('cancelBtn').onclick = resetForm;
+  document.getElementById('deleteBtn').onclick = function () {
+    if (!editingId) return;
+    state.events = state.events.filter(function (x) { return x.id !== editingId; });
+    save();
+    resetForm();
+    render();
+    toast('Удалено');
+  };
+  document.getElementById('fRepeat').onchange = syncRepeatUI;
+
+  document.getElementById('week').addEventListener('click', function (ev) {
+    var add = ev.target.closest('.add-btn');
+    if (add) {
+      resetForm();
+      document.getElementById('fRepeat').value = 'once';
+      document.getElementById('fDate').value = add.getAttribute('data-iso');
+      document.getElementById('fWeekday').value = add.getAttribute('data-day');
+      syncRepeatUI();
+      document.getElementById('fName').focus();
+      document.querySelector('.form-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      return;
+    }
+    var card = ev.target.closest('.event');
+    if (card) startEdit(card.getAttribute('data-id'));
+  });
+
+  document.getElementById('copyBtn').onclick = function () {
+    var text = weekAsText();
+    function done() { toast('Скопировано — можно отправлять 💌'); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { window.prompt('Скопируй вручную:', text); });
+    } else {
+      window.prompt('Скопируй вручную:', text);
+    }
+  };
+
+  document.getElementById('dlAddBtn').onclick = function () {
+    var name = document.getElementById('dlName').value.trim();
+    var date = document.getElementById('dlDate').value;
+    if (!name || !date) { toast('Нужны и название, и дата'); return; }
+    state.deadlines.push({ id: uid(), title: name, date: date, done: false });
+    document.getElementById('dlName').value = '';
+    save();
+    render();
+  };
+  document.getElementById('dlList').addEventListener('click', function (ev) {
+    var del = ev.target.closest('[data-dldel]');
+    if (del) {
+      state.deadlines = state.deadlines.filter(function (x) { return x.id !== del.getAttribute('data-dldel'); });
+      save(); render();
+      return;
+    }
+    var cb = ev.target.closest('[data-dl]');
+    if (cb) {
+      var dl = state.deadlines.find(function (x) { return x.id === cb.getAttribute('data-dl'); });
+      if (dl) { dl.done = cb.checked; save(); render(); }
+    }
+  });
+
+  var titleEl = document.getElementById('title');
+  titleEl.textContent = state.title || 'Планер Кати';
+  document.title = titleEl.textContent + ' 🎭';
+  titleEl.addEventListener('input', function () {
+    state.title = titleEl.textContent.trim() || 'Планер';
+    save();
+  });
+  titleEl.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); titleEl.blur(); }
+  });
+
+  document.getElementById('exportBtn').onclick = function () {
+    var blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'planer-kati-kopiya.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('Копия сохранена в загрузки');
+  };
+  document.getElementById('importFile').addEventListener('change', function () {
+    var f = this.files[0];
+    if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      try {
+        var s = JSON.parse(r.result);
+        if (!s || !Array.isArray(s.events) || !Array.isArray(s.deadlines)) throw new Error('bad');
+        state = s;
+        save();
+        titleEl.textContent = state.title || 'Планер';
+        render();
+        toast('Копия загружена ✓');
+      } catch (e) {
+        toast('Не получилось прочитать файл 😕');
+      }
+    };
+    r.readAsText(f);
+    this.value = '';
+  });
+
+  // --- старт ---
+  fillTypeSelects();
+  resetForm();
+  render();
+  // внутри Telegram облачные данные — источник истины: подтягиваем их поверх локальных
+  cloudLoad(function (s) {
+    if (s) {
+      state = s;
+      try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
+      titleEl.textContent = state.title || 'Планер';
+      document.title = titleEl.textContent + ' 🎭';
+      render();
+    }
+  });
+})();
+</script>
+</body>
+</html>
