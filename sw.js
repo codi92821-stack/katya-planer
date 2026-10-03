@@ -2,7 +2,7 @@
    Регистрируется из App.main только при 'serviceWorker' in navigator и https.
    Запросы к API (другой origin) и version.json (no-store) не перехватываются и не кэшируются.
    VERSION держится равной App.config.VERSION — это проверяет тест core (SPEC §12). */
-var VERSION = '2.2.0';
+var VERSION = '2.3.0';
 var CACHE = 'okno-shell-' + VERSION;
 var CACHE_PREFIX = 'okno-shell-';
 var NAV_TIMEOUT_MS = 3000;
