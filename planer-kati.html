@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-pMq8PHcCatdDFeaEDlUROVQIxxGhq9aoMfHuRSSS0Bg='; style-src 'self' 'sha256-kYVJ8yD7n0y8OiM9Bw/Vz4Tm55RydsuUENRPZphwa/I='; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://planishka-api.planishka.workers.dev; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Планишка</title>
+  <meta name="robots" content="noindex">
+  <script>
+    // Старый адрес планера v1 → «Планишка» на том же origin (данные v1 доступны миграции).
+    // Query и hash сохраняются: в них параметры запуска Telegram (tgWebAppData, tgWebAppStartParam…).
+    (function () {
+      location.replace('./' + location.search + location.hash);
+    })();
+  </script>
+  <meta http-equiv="refresh" content="0; url=./">
+  <style>
+    html { color-scheme: dark light; }
+    body { margin: 0; min-height: 100%; display: flex; align-items: center; justify-content: center; padding: 24px 16px; background: #05070D; color: #A6B0C8; font: 15px/1.35 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; }
+    a { color: #7AA5FF; }
+    @media (prefers-color-scheme: light) {
+      body { background: #F6F8FC; color: #475370; }
+      a { color: #1846B8; }
+    }
+  </style>
+</head>
+<body>
+  <p>Планер переехал в «Планишку». <a href="./">Открыть</a></p>
+</body>
+</html>
